@@ -1,0 +1,93 @@
+---
+title: "R Notebook"
+output:
+  html_document: 
+    number_sections: yes
+    theme: yeti
+    highlight: textmate
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+editor_options: 
+  chunk_output_type: inline
+bibliography: library.bib
+---
+```{r}
+library(plotly)
+library(raster)
+library(weathermetrics)
+library(tidyr)
+library(flexdashboard)
+
+GB_auto <- raster::getData('GADM', 
+                           country="GBR", 
+                           level=0, 
+                           download=TRUE)
+
+GBclim <- raster::getData("worldclim", 
+                          res=5, 
+                          var="tmean",
+                          download=TRUE)
+
+month <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+names(GBclim) <- month
+
+GBtemp <- GBclim %>%
+  crop(., GB_auto)%>%
+  #WorldClim data has a scale factor of 10!
+  mask(., GB_auto)/10
+
+alldf <- GBtemp %>% 
+  as.data.frame()%>%
+  pivot_longer(
+  cols = 1:12,
+  names_to = "Month",
+  values_to = "Temp")%>%
+  drop_na()
+
+jan<-filter(alldf, Month=="Jan")
+jun<-filter(alldf, Month=="Jun")
+
+# give axis titles
+x <- list (title = "Temperature")
+y <- list (title = "Frequency")
+
+# set the bin width
+xbinsno<-list(start=-5, end=20, size = 2.5)
+
+# plot the histogram calling all the variables we just set
+ihist<-plot_ly(alpha = 0.6) %>%
+        add_histogram(x = jan$Temp,
+        xbins=xbinsno, name="January") %>%
+        add_histogram(x = jun$Temp,
+        xbins=xbinsno, name="June") %>% 
+        layout(barmode = "overlay", xaxis=x, yaxis=y)
+ihist
+
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#Last section
+[@West2020;@Lei2018]
+
